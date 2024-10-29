@@ -18,6 +18,9 @@ COPY packages/shared/package*.json ./packages/shared/
 
 COPY packages/webapp/package*.json ./packages/webapp/
 
+# Copy the patches directory
+COPY patches /opt/app/patches
+
 RUN \
   apk --no-cache add \
   libc6-compat

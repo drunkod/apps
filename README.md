@@ -85,3 +85,8 @@ Example for Chrome:
 - The extension should be loaded and you should be able to see it in the extensions list
 - Enable the extension, don't forget to disable it when you are done
 - Disable the production extension if you have it installed as it might cause conflicts
+
+Run local appp
+cd packages/webapp
+run
+npm run dev
