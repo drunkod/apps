@@ -6,15 +6,19 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }: flake-utils.lib.eachDefaultSystem (system: {
+  outputs = { self, nixpkgs, flake-utils }: flake-utils.lib.eachDefaultSystem (system: let
+    pkgs = import nixpkgs { inherit system; };
+  in {
     packages.default = pkgs.mkShell {
       buildInputs = [
-        nixpkgs.nodejs
-        nixpkgs.pnpm
-        nixpkgs.gcc
-        nixpkgs.make
-        nixpkgs.python3
-        nixpkgs.libc6
+        pkgs.nodejs
+        pkgs.pnpm
+        pkgs.gcc
+        # pkgs.make
+        pkgs.python3
+        # pkgs.libc6
+        pkgs.git
+        pkgs.gh
       ];
 
       shellHook = ''
@@ -43,19 +47,18 @@
             pkgs.python3
             pkgs.libc6
           ];
-          # Copy the application files
-          src = ./.;
+          # Use the current directory as the source
           installPhase = ''
             mkdir -p $out/opt/app
-            cp -r ${src}/packages $out/opt/app/packages
-            cp -r ${src}/patches $out/opt/app/patches
-            cp ${src}/package*.json $out/opt/app/
-            cp ${src}/packages/eslint-config/package*.json $out/opt/app/packages/eslint-config/
-            cp ${src}/packages/eslint-rules/package*.json $out/opt/app/packages/eslint-rules/
-            cp ${src}/packages/extension/package*.json $out/opt/app/packages/extension/
-            cp ${src}/packages/prettier-config/package*.json $out/opt/app/packages/prettier-config/
-            cp ${src}/packages/shared/package*.json $out/opt/app/packages/shared/
-            cp ${src}/packages/webapp/package*.json $out/opt/app/packages/webapp/
+            cp -r ./packages $out/opt/app/packages
+            cp -r ./patches $out/opt/app/patches
+            cp package*.json $out/opt/app/
+            cp packages/eslint-config/package*.json $out/opt/app/packages/eslint-config/
+            cp packages/eslint-rules/package*.json $out/opt/app/packages/eslint-rules/
+            cp packages/extension/package*.json $out/opt/app/packages/extension/
+            cp packages/prettier-config/package*.json $out/opt/app/packages/prettier-config/
+            cp packages/shared/package*.json $out/opt/app/packages/shared/
+            cp packages/webapp/package*.json $out/opt/app/packages/webapp/
           '';
         })
       ];
