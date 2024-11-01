@@ -14,6 +14,7 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
+            bashInteractive
             # Node.js and development tools
             nodejs_20
             python3
