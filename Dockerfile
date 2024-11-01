@@ -31,5 +31,5 @@ RUN pnpm install
 COPY packages ./packages
 
 WORKDIR /opt/app/packages/webapp
-CMD ["npm", "run", "dev"]
 
+CMD ["pnpm", "install"]

@@ -1,72 +1,96 @@
 {
-  description = "Nix Flake for a Node.js application with pnpm";
+  description = "Node.js development environment with pnpm";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; # or a specific version
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }: flake-utils.lib.eachDefaultSystem (system: let
-    pkgs = import nixpkgs { inherit system; };
-  in {
-    packages.default = pkgs.mkShell {
-      buildInputs = [
-        pkgs.nodejs
-        pkgs.pnpm
-        pkgs.gcc
-        # pkgs.make
-        pkgs.python3
-        # pkgs.libc6
-        pkgs.git
-        pkgs.gh
-      ];
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            # Node.js and development tools
+            nodejs_20
+            python3
+            gcc
+            gnumake
 
-      shellHook = ''
-        echo "Welcome to the Nix shell for the Node.js application!"
-        echo "Run 'pnpm install' to install dependencies."
-        echo "Run 'npm run dev' to start the application."
-      '';
-    };
+            # Package manager
+            nodePackages.pnpm
 
-    # Optionally, you can create a Docker image
-    dockerImage = pkgs.dockerTools.buildImage {
-      name = "my-node-app";
-      contents = [
-        (pkgs.nodejs.override {
-          package = pkgs.nodejs;
-        })
-        (pkgs.pnpm.override {
-          package = pkgs.pnpm;
-        })
-        (pkgs.runCommand "app" {
-          buildInputs = [
-            pkgs.nodejs
-            pkgs.pnpm
-            pkgs.gcc
-            pkgs.make
-            pkgs.python3
-            pkgs.libc6
+            # Additional dependencies
+            glibc
+            curl # for healthchecks
           ];
-          # Use the current directory as the source
-          installPhase = ''
-            mkdir -p $out/opt/app
-            cp -r ./packages $out/opt/app/packages
-            cp -r ./patches $out/opt/app/patches
-            cp package*.json $out/opt/app/
-            cp packages/eslint-config/package*.json $out/opt/app/packages/eslint-config/
-            cp packages/eslint-rules/package*.json $out/opt/app/packages/eslint-rules/
-            cp packages/extension/package*.json $out/opt/app/packages/extension/
-            cp packages/prettier-config/package*.json $out/opt/app/packages/prettier-config/
-            cp packages/shared/package*.json $out/opt/app/packages/shared/
-            cp packages/webapp/package*.json $out/opt/app/packages/webapp/
+
+          shellHook = ''
+            # Create necessary directories
+            mkdir -p /tmp/app
+            
+            # Set environment variables
+            export PATH="$PWD/node_modules/.bin:$PATH"
           '';
-        })
-      ];
-      config = {
-        Cmd = [ "pnpm" "install" ];
-        WorkingDir = "/opt/app/packages/webapp";
-        Expose = [ "3000" ]; # Change this if your app runs on a different port
-      };
-    };
-  });
+        };
+
+        # Optional: Define a package if you want to build the application
+        packages.default = pkgs.stdenv.mkDerivation {
+          name = "webapp";
+          version = "1.0.0";
+
+          src = ./.;
+
+          buildInputs = with pkgs; [
+            nodejs_20
+            nodePackages.pnpm
+            python3
+            gcc
+            gnumake
+          ];
+
+          buildPhase = ''
+            # Copy package.json files
+            mkdir -p $out/tmp/app
+            cp package*.json $out/tmp/app/
+            
+            mkdir -p $out/tmp/app/packages/{eslint-config,eslint-rules,extension,prettier-config,shared,webapp}
+            cp packages/eslint-config/package*.json $out/tmp/app/packages/eslint-config/
+            cp packages/eslint-rules/package*.json $out/tmp/app/packages/eslint-rules/
+            cp packages/extension/package*.json $out/tmp/app/packages/extension/
+            cp packages/prettier-config/package*.json $out/tmp/app/packages/prettier-config/
+            cp packages/shared/package*.json $out/tmp/app/packages/shared/
+            cp packages/webapp/package*.json $out/tmp/app/packages/webapp/
+
+            # Copy patches
+            cp -r patches $out/tmp/app/
+
+            # Install dependencies
+            cd $out/tmp/app
+            pnpm install
+
+            # Copy source files
+            cp -r packages $out/tmp/app/
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cat > $out/bin/start-webapp <<EOF
+            #!/bin/sh
+            cd $out/tmp/app/packages/webapp
+            exec pnpm start
+            EOF
+            chmod +x $out/bin/start-webapp
+          '';
+
+          meta = {
+            description = "Web application with pnpm workspace";
+            platforms = pkgs.lib.platforms.linux;
+          };
+        };
+      });
 }
+

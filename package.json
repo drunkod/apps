@@ -3,7 +3,9 @@
   "private": true,
   "dependencies": {
     "@babel/runtime": "^7.25.9",
-    "postcss-rem-to-responsive-pixel": "^6.0.2"
+    "postcss-rem-to-responsive-pixel": "^6.0.2",
+    "graphql-request": "^3.7.0",
+     "@dailydotdev/eslint-plugin-daily-dev-eslint-rules": "file:packages/eslint-rules"
   },
   "scripts": {
     "prepare": "corepack enable || true",
