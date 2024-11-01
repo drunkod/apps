@@ -7,38 +7,34 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachDefaultSystem (system: 
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
+        # Development shell configuration
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             bashInteractive
-            # Node.js and development tools
             nodejs_20
             python3
             gcc
             gnumake
-
-            # Package manager
             nodePackages.pnpm
-
-            # Additional dependencies
             glibc
-            curl # for healthchecks
+            curl
           ];
 
           shellHook = ''
             # Create necessary directories
             mkdir -p /tmp/app
             
-            # Set environment variables
+            # Update PATH to include local node_modules binaries
             export PATH="$PWD/node_modules/.bin:$PATH"
           '';
         };
 
-        # Optional: Define a package if you want to build the application
+        # Package definition for building the application
         packages.default = pkgs.stdenv.mkDerivation {
           name = "webapp";
           version = "1.0.0";
@@ -54,17 +50,17 @@
           ];
 
           buildPhase = ''
-            # Copy package.json files
+            # Create temporary application directory
             mkdir -p $out/tmp/app
+            
+            # Copy package.json files
             cp package*.json $out/tmp/app/
             
-            mkdir -p $out/tmp/app/packages/{eslint-config,eslint-rules,extension,prettier-config,shared,webapp}
-            cp packages/eslint-config/package*.json $out/tmp/app/packages/eslint-config/
-            cp packages/eslint-rules/package*.json $out/tmp/app/packages/eslint-rules/
-            cp packages/extension/package*.json $out/tmp/app/packages/extension/
-            cp packages/prettier-config/package*.json $out/tmp/app/packages/prettier-config/
-            cp packages/shared/package*.json $out/tmp/app/packages/shared/
-            cp packages/webapp/package*.json $out/tmp/app/packages/webapp/
+            # Copy package-specific JSON files
+            for pkg in eslint-config eslint-rules extension prettier-config shared webapp; do
+              mkdir -p $out/tmp/app/packages/$pkg
+              cp packages/$pkg/package*.json $out/tmp/app/packages/$pkg/
+            done
 
             # Copy patches
             cp -r patches $out/tmp/app/
@@ -78,6 +74,7 @@
           '';
 
           installPhase = ''
+            # Create executable script to start the web application
             mkdir -p $out/bin
             cat > $out/bin/start-webapp <<EOF
             #!/bin/sh
@@ -94,4 +91,3 @@
         };
       });
 }
-
