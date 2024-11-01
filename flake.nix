@@ -25,12 +25,24 @@
             curl
           ];
 
-          shellHook = ''
-            # Create necessary directories
-            mkdir -p /tmp/app
-            
-            # Update PATH to include local node_modules binaries
-            export PATH="$PWD/node_modules/.bin:$PATH"
+      shellHook = ''
+        echo "Welcome to the Nix shell for the Node.js application!"
+        echo "Run 'pnpm install' to install dependencies."
+        echo "Run 'npm run dev' to start the application."
+
+        # Prompt for Git configuration
+        read -p "Do you want to set up Git configuration? (y/n): " setup_git
+        if [ "$setup_git" = "y" ]; then
+          read -p "Enter your name: " git_name
+          read -p "Enter your email: " git_email
+          git config --global user.name "$git_name"
+          git config --global user.email "$git_email"
+          echo "Git configuration set for user: $git_name <$git_email>"
+        else
+          echo "Skipping Git configuration."
+        fi
+      '';
+    };
 
             # Configure pnpm to ignore SSL verification
             pnpm config set strict-ssl false
