@@ -31,6 +31,9 @@
             
             # Update PATH to include local node_modules binaries
             export PATH="$PWD/node_modules/.bin:$PATH"
+
+            # Configure pnpm to ignore SSL verification
+            pnpm config set strict-ssl false
           '';
         };
 
@@ -67,6 +70,7 @@
 
             # Install dependencies
             cd $out/tmp/app
+            pnpm config set strict-ssl false  # Configure pnpm to ignore SSL verification
             pnpm install
 
             # Copy source files
