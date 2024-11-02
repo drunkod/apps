@@ -18,7 +18,7 @@
         # nodePackages.pnpm
         #(yarn.override { nodejs = nodejs_18; })
         # Add nvm if needed
-        nvm
+        # nvm
       ];
 
       # Environment variables
