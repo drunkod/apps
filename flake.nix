@@ -31,9 +31,9 @@
         export NEXT_PUBLIC_HEIMDALL_URL="http://localhost"
 
         echo "node `${pkgs.nodejs}/bin/node --version`"
-
-        npm config set registry http://registry.npmjs.org/ 
-        
+        echo "update"
+        # npm config set registry http://registry.npmjs.org/ 
+        npm config set strict-ssl=false
         # Initialize project
         if [ ! -f "pnpm-lock.yaml" ]; then
           echo "Installing pnpm and project dependencies..."
