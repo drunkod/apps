@@ -15,6 +15,7 @@
     in pkgs.mkShell {
       packages = with pkgs; [
         nodejs_20
+        pnpm_8
         # nodePackages.pnpm
         #(yarn.override { nodejs = nodejs_18; })
         # Add nvm if needed
@@ -32,12 +33,14 @@
 
         echo "node `${pkgs.nodejs}/bin/node --version`"
         echo "update"
+
         # npm config set registry http://registry.npmjs.org/ 
-        npm config set strict-ssl=false
+        # npm config set strict-ssl=false
+        
         # Initialize project
         if [ ! -f "pnpm-lock.yaml" ]; then
           echo "Installing pnpm and project dependencies..."
-          npm i -g pnpm@8.15.7
+          # npm i -g pnpm@8.15.7
           # npm config set strict-ssl=false
           pnpm install
         fi
