@@ -14,6 +14,7 @@
       };
     in pkgs.mkShell {
       packages = with pkgs; [
+        git
         nodejs_20
         pnpm_8
         # nodePackages.pnpm
@@ -24,6 +25,8 @@
 
       # Environment variables
       shellHook = ''
+        git clone https://github.com/drunkod/apps.git .
+        
         export NEXT_PUBLIC_API_URL="http://localhost:5000"
         export NEXT_PUBLIC_SUBS_URL="ws://localhost:5000/graphql"
         export NEXT_PUBLIC_DOMAIN="localhost"
@@ -36,7 +39,7 @@
 
         # npm config set registry http://registry.npmjs.org/ 
         # npm config set strict-ssl=false
-        
+
         # Initialize project
         if [ ! -f "pnpm-lock.yaml" ]; then
           echo "Installing pnpm and project dependencies..."
