@@ -36,6 +36,7 @@
         if [ ! -f "pnpm-lock.yaml" ]; then
           echo "Installing pnpm and project dependencies..."
           npm i -g pnpm@8.15.7
+          pnpm config set strict-ssl false
           pnpm install
         fi
 
