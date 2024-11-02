@@ -1,109 +1,53 @@
 {
-  description = "Node.js development environment with pnpm";
+  description = "Webapp development environment";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system: 
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in
-      {
-        # Development shell configuration
-        devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            bashInteractive
-            nodejs_20
-            python3
-            gcc
-            gnumake
-            nodePackages.pnpm
-            glibc
-            curl
-          ];
+  outputs = { self, nixpkgs, ... }: let
+    system = "x86_64-linux";
+  in {
+    devShells."${system}".default = let
+      pkgs = import nixpkgs {
+        inherit system;
+      };
+    in pkgs.mkShell {
+      packages = with pkgs; [
+        nodejs_20
+        # nodePackages.pnpm
+        #(yarn.override { nodejs = nodejs_18; })
+        # Add nvm if needed
+        nvm
+      ];
 
+      # Environment variables
       shellHook = ''
-        echo "Welcome to the Nix shell for the Node.js application!"
-        echo "Run 'pnpm install' to install dependencies."
-        echo "Run 'npm run dev' to start the application."
+        export NEXT_PUBLIC_API_URL="http://localhost:5000"
+        export NEXT_PUBLIC_SUBS_URL="ws://localhost:5000/graphql"
+        export NEXT_PUBLIC_DOMAIN="localhost"
+        export NEXT_PUBLIC_WEBAPP_URL="/"
+        export NEXT_PUBLIC_AUTH_URL="http://localhost"
+        export NEXT_PUBLIC_HEIMDALL_URL="http://localhost"
 
-        # Prompt for Git configuration
-        read -p "Do you want to set up Git configuration? (y/n): " setup_git
-        if [ "$setup_git" = "y" ]; then
-          read -p "Enter your name: " git_name
-          read -p "Enter your email: " git_email
-          git config --global user.name "$git_name"
-          git config --global user.email "$git_email"
-          echo "Git configuration set for user: $git_name <$git_email>"
-        else
-          echo "Skipping Git configuration."
+        echo "node `${pkgs.nodejs}/bin/node --version`"
+        
+        # Initialize project
+        if [ ! -f "pnpm-lock.yaml" ]; then
+          echo "Installing pnpm and project dependencies..."
+          npm i -g pnpm@8.15.7
+          pnpm install
         fi
+
+        # Optional: Auto-cd into webapp directory
+        if [ -d "packages/webapp" ]; then
+          cd packages/webapp
+          echo "Changed directory to packages/webapp"
+        fi
+
+        # You can uncomment this if you want the dev server to start automatically
+        # npm run dev
       '';
     };
-
-            # Configure pnpm to ignore SSL verification
-            pnpm config set strict-ssl false
-          '';
-        };
-
-        # Package definition for building the application
-        packages.default = pkgs.stdenv.mkDerivation {
-          name = "webapp";
-          version = "1.0.0";
-
-          src = ./.;
-
-          buildInputs = with pkgs; [
-            nodejs_20
-            nodePackages.pnpm
-            python3
-            gcc
-            gnumake
-          ];
-
-          buildPhase = ''
-            # Create temporary application directory
-            mkdir -p $out/tmp/app
-            
-            # Copy package.json files
-            cp package*.json $out/tmp/app/
-            
-            # Copy package-specific JSON files
-            for pkg in eslint-config eslint-rules extension prettier-config shared webapp; do
-              mkdir -p $out/tmp/app/packages/$pkg
-              cp packages/$pkg/package*.json $out/tmp/app/packages/$pkg/
-            done
-
-            # Copy patches
-            cp -r patches $out/tmp/app/
-
-            # Install dependencies
-            cd $out/tmp/app
-            pnpm config set strict-ssl false  # Configure pnpm to ignore SSL verification
-            pnpm install
-
-            # Copy source files
-            cp -r packages $out/tmp/app/
-          '';
-
-          installPhase = ''
-            # Create executable script to start the web application
-            mkdir -p $out/bin
-            cat > $out/bin/start-webapp <<EOF
-            #!/bin/sh
-            cd $out/tmp/app/packages/webapp
-            exec pnpm start
-            EOF
-            chmod +x $out/bin/start-webapp
-          '';
-
-          meta = {
-            description = "Web application with pnpm workspace";
-            platforms = pkgs.lib.platforms.linux;
-          };
-        };
-      });
+  };
 }
