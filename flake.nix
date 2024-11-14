@@ -59,7 +59,7 @@
       '';
     };
 
-    node = pkgs.mkShell {
+    docker = pkgs.mkShell {
       packages = with pkgs; [
         git
         nodejs_20
@@ -72,35 +72,68 @@
 
       # Environment variables
       shellHook = ''
+
+        # Create working directory structure
+        export PROJECT_ROOT="$PWD"
+        WORK_DIR="$PWD/app"
+        if [ ! -d "$WORK_DIR" ]; then
+            mkdir -p "$WORK_DIR"
+            chmod 755 "$WORK_DIR"
+        fi
+        PACK_DIR="$WORK_DIR/packages"
+        if [ ! -d "$PACK_DIR" ]; then
+            mkdir -p "$PACK_DIR"
+            chmod 755 "$PACK_DIR"
+        fi
+
+        # Copy package.json files
+        cp package*.json "$WORK_DIR/"
+        cp pnpm-*.yaml "$WORK_DIR/"
+
+        # Create directories for each package
+        mkdir -p "$PACK_DIR/eslint-config"
+        mkdir -p "$PACK_DIR/eslint-rules"
+        mkdir -p "$PACK_DIR/extension"
+        mkdir -p "$PACK_DIR/prettier-config"
+        mkdir -p "$PACK_DIR/shared"
+        mkdir -p "$PACK_DIR/webapp"
+
+        # Copy package.json files for each package
+        cp packages/eslint-config/package*.json "$PACK_DIR/eslint-config/"
+        cp packages/eslint-rules/package*.json "$PACK_DIR/eslint-rules/"
+        cp packages/extension/package*.json "$PACK_DIR/extension/"
+        cp packages/prettier-config/package*.json "$PACK_DIR/prettier-config/"
+        cp packages/shared/package*.json "$PACK_DIR/shared/"
+        cp packages/webapp/package*.json "$PACK_DIR/webapp/"
+
+        # Create and copy patches directory
+        mkdir -p "$WORK_DIR/patches"
+        cp -r patches/* "$WORK_DIR/patches/"
+
+        cd "$WORK_DIR"
+
+        # Install project dependencies
+        pnpm install
+
+        # Copy the contents of the original packages directory to the new packages directory
+        cp -r "$PROJECT_ROOT/packages/"* "$PACK_DIR/"
+
+        # Change to the webapp directory
+        cd "$PACK_DIR/webapp"
+
+        # Install webapp dependencies
+        pnpm install
+
+        # Verify next.js installation
+        if [ ! -d "node_modules/next" ]; then
+          echo "Installing next.js..."
+          pnpm add next@latest
+        fi        
+
         echo "node `${pkgs.nodejs}/bin/node --version`"
         echo "update"
 
-        # Create app directory and set working directory
-              mkdir -p app
-              cd app
-
-              # Copy package.json files
-              for file in package*.json; do
-                if [ -f "$file" ]; then
-                  cp "$file" .
-                fi
-              done
-
-              # Create and copy package.json files for each package
-              mkdir -p packages/{eslint-config,eslint-rules,extension,prettier-config,shared,webapp}
-              
-              for dir in eslint-config eslint-rules extension prettier-config shared webapp; do
-                if [ -f "packages/$dir/package.json" ]; then
-                  cp "packages/$dir/package"*.json "./packages/$dir/"
-                fi
-              done
-
-              # Copy patches directory if it exists
-              if [ -d "patches" ]; then
-                cp -r patches /opt/app/
-              fi
-
-              echo "Development environment setup complete"
+        echo "Development environment setup complete"
       '';
     };    
     };

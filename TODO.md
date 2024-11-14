@@ -22,3 +22,12 @@ try build
       - MOCK_USER_ID=testuser
 
       with this 
+
+      work with
+
+NEXT_PUBLIC_API_URL=http://192.168.76.212:5000
+NEXT_PUBLIC_SUBS_URL=ws://192.168.76.212:5000/graphql
+NEXT_PUBLIC_DOMAIN=192.168.76.212
+NEXT_PUBLIC_WEBAPP_URL=/
+NEXT_PUBLIC_AUTH_URL=http://localhost
+NEXT_PUBLIC_HEIMDALL_URL=http://localhost
